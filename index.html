@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Pour Over" />
+  <meta name="theme-color" content="#1a1208" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <title>Pour Over</title>
+
+  <style>
+    /* ── Design tokens ─────────────────────────────────────────── */
+    :root {
+      --bg:          #1a1208;
+      --surface:     #241a0d;
+      --surface-2:   #2e2110;
+      --gold:        #c8973a;
+      --gold-dim:    #9a7230;
+      --cream:       #f0e6cc;
+      --cream-dim:   #b8a882;
+      --text:        #f0e6cc;
+      --text-dim:    #8a7a5e;
+      --border:      #3a2c18;
+      --danger:      #c84a3a;
+
+      --font-display: 'Georgia', 'Times New Roman', serif;
+      --font-body:    -apple-system, 'Helvetica Neue', sans-serif;
+
+      --safe-top:    env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    /* ── Reset ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      -webkit-font-smoothing: antialiased;
+      overscroll-behavior: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* ── Shell ─────────────────────────────────────────────────── */
+    .shell {
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+      padding-top: calc(var(--safe-top) + 16px);
+      padding-bottom: calc(var(--safe-bottom) + 24px);
+      padding-left: 24px;
+      padding-right: 24px;
+    }
+
+    /* ── Header ────────────────────────────────────────────────── */
+    header {
+      text-align: center;
+      padding-bottom: 28px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 28px;
+    }
+
+    .wordmark {
+      font-family: var(--font-display);
+      font-size: 13px;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 4px;
+    }
+
+    .tagline {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+
+    /* ── Ratio picker ──────────────────────────────────────────── */
+    .section-label {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+    }
+
+    .ratio-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 32px;
+    }
+
+    .ratio-btn {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--cream-dim);
+      font-family: var(--font-body);
+      font-size: 13px;
+      padding: 10px 4px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      text-align: center;
+    }
+
+    .ratio-btn .ratio-num {
+      display: block;
+      font-family: var(--font-display);
+      font-size: 17px;
+      color: var(--cream);
+      margin-bottom: 2px;
+    }
+
+    .ratio-btn .ratio-tag {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+    }
+
+    .ratio-btn.active {
+      background: var(--surface-2);
+      border-color: var(--gold-dim);
+      color: var(--cream);
+    }
+
+    .ratio-btn.active .ratio-num { color: var(--gold); }
+    .ratio-btn.active .ratio-tag { color: var(--cream-dim); }
+
+    /* ── Input block ───────────────────────────────────────────── */
+    .input-block {
+      margin-bottom: 32px;
+    }
+
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .input-wrap:focus-within {
+      border-color: var(--gold-dim);
+    }
+
+    .num-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-family: var(--font-display);
+      font-size: 52px;
+      color: var(--cream);
+      padding: 20px 16px 20px 20px;
+      width: 100%;
+      -webkit-appearance: none;
+      appearance: none;
+      caret-color: var(--gold);
+    }
+
+    /* hide spinners */
+    .num-input::-webkit-outer-spin-button,
+    .num-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+    .input-unit {
+      font-size: 14px;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      padding-right: 20px;
+      white-space: nowrap;
+    }
+
+    /* ── Stepper buttons ───────────────────────────────────────── */
+    .stepper-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .step-btn {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--cream-dim);
+      font-size: 18px;
+      padding: 10px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .step-btn:active { background: var(--surface-2); }
+
+    .step-btn .step-label {
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+    }
+
+    /* ── Result card ───────────────────────────────────────────── */
+    .result-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 24px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .result-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
+
+    .result-label {
+      font-size: 10px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+    }
+
+    .result-number {
+      font-family: var(--font-display);
+      font-size: 72px;
+      line-height: 1;
+      color: var(--gold);
+      margin-bottom: 4px;
+      transition: opacity 0.15s;
+    }
+
+    .result-number.pulse {
+      opacity: 0.4;
+    }
+
+    .result-unit {
+      font-size: 14px;
+      letter-spacing: 0.12em;
+      color: var(--cream-dim);
+      margin-bottom: 16px;
+    }
+
+    .result-ratio-line {
+      font-size: 12px;
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+    }
+
+    .result-ratio-line strong {
+      color: var(--cream-dim);
+      font-weight: 500;
+    }
+
+    /* ── Pour stages ───────────────────────────────────────────── */
+    .stages {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .stages-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .stage-row {
+      display: flex;
+      align-items: center;
+      padding: 13px 18px;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+
+    .stage-row:last-child { border-bottom: none; }
+
+    .stage-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--gold-dim);
+      flex-shrink: 0;
+    }
+
+    .stage-dot.bloom { background: var(--gold); }
+
+    .stage-name {
+      flex: 1;
+      font-size: 13px;
+      color: var(--cream-dim);
+    }
+
+    .stage-name small {
+      display: block;
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-top: 1px;
+    }
+
+    .stage-amount {
+      font-family: var(--font-display);
+      font-size: 20px;
+      color: var(--cream);
+      text-align: right;
+    }
+
+    .stage-amount span {
+      font-family: var(--font-body);
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-left: 2px;
+    }
+
+    /* ── Add to homescreen hint (shows only when not standalone) ─ */
+    .install-hint {
+      margin-top: 24px;
+      padding: 14px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.5;
+      text-align: center;
+      display: none;
+    }
+
+    .install-hint .share-icon {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      background: var(--gold-dim);
+      border-radius: 3px;
+      position: relative;
+      top: 3px;
+      margin: 0 2px;
+    }
+
+    /* Show hint only when NOT running standalone */
+    @media (display-mode: browser) {
+      .install-hint { display: block; }
+    }
+
+    /* ── Empty state ────────────────────────────────────────────── */
+    .empty {
+      color: var(--text-dim);
+      font-family: var(--font-display);
+      font-size: 44px;
+    }
+
+    .result-card.no-input .result-number { color: var(--text-dim); }
+  </style>
+</head>
+<body>
+
+<div class="shell">
+
+  <header>
+    <p class="wordmark">Pour Over</p>
+    <p class="tagline">Brew ratio calculator</p>
+  </header>
+
+  <!-- Ratio selector -->
+  <p class="section-label">Ratio (coffee : water)</p>
+  <div class="ratio-row" id="ratioRow">
+    <button class="ratio-btn" data-ratio="15" onclick="setRatio(this)">
+      <span class="ratio-num">1:15</span>
+      <span class="ratio-tag">Light</span>
+    </button>
+    <button class="ratio-btn active" data-ratio="16" onclick="setRatio(this)">
+      <span class="ratio-num">1:16</span>
+      <span class="ratio-tag">Classic</span>
+    </button>
+    <button class="ratio-btn" data-ratio="17" onclick="setRatio(this)">
+      <span class="ratio-num">1:17</span>
+      <span class="ratio-tag">Delicate</span>
+    </button>
+    <button class="ratio-btn" data-ratio="custom" onclick="setRatio(this)" id="customBtn">
+      <span class="ratio-num" id="customLabel">1:?</span>
+      <span class="ratio-tag">Custom</span>
+    </button>
+  </div>
+
+  <!-- Custom ratio input (hidden by default) -->
+  <div id="customRatioBlock" style="display:none; margin-bottom:24px;">
+    <p class="section-label">Custom ratio (1 : X)</p>
+    <div class="input-wrap" style="border-radius:10px;">
+      <input class="num-input" type="number" id="customRatioInput"
+             style="font-size:36px; padding:14px 16px 14px 20px;"
+             min="10" max="30" step="0.5" placeholder="16"
+             inputmode="decimal"
+             oninput="onCustomRatioChange()" />
+      <span class="input-unit">parts water</span>
+    </div>
+  </div>
+
+  <!-- Coffee input -->
+  <div class="input-block">
+    <p class="section-label">Coffee</p>
+    <div class="input-wrap">
+      <input class="num-input" type="number" id="coffeeInput"
+             min="1" max="999" step="1" placeholder="20"
+             inputmode="decimal"
+             oninput="calc()" />
+      <span class="input-unit">g</span>
+    </div>
+    <div class="stepper-row">
+      <button class="step-btn" onclick="step(-5)">−<span class="step-label">5g</span></button>
+      <button class="step-btn" onclick="step(-1)">−<span class="step-label">1g</span></button>
+      <button class="step-btn" onclick="step(1)">+<span class="step-label">1g</span></button>
+      <button class="step-btn" onclick="step(5)">+<span class="step-label">5g</span></button>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div class="result-card" id="resultCard">
+    <p class="result-label">Water</p>
+    <p class="result-number" id="resultNumber">—</p>
+    <p class="result-unit">grams</p>
+    <p class="result-ratio-line" id="ratioLine"></p>
+  </div>
+
+  <!-- Pour stages -->
+  <div class="stages" id="stagesBlock" style="display:none;">
+    <div class="stages-header">
+      <span>Pour guide</span>
+      <span>4-pour method</span>
+    </div>
+    <div class="stage-row">
+      <div class="stage-dot bloom"></div>
+      <div class="stage-name">
+        Bloom
+        <small>0:00 → 0:45</small>
+      </div>
+      <div class="stage-amount" id="s1">— <span>g</span></div>
+    </div>
+    <div class="stage-row">
+      <div class="stage-dot"></div>
+      <div class="stage-name">
+        Pour 2
+        <small>0:45 → 1:30</small>
+      </div>
+      <div class="stage-amount" id="s2">— <span>g</span></div>
+    </div>
+    <div class="stage-row">
+      <div class="stage-dot"></div>
+      <div class="stage-name">
+        Pour 3
+        <small>1:30 → 2:15</small>
+      </div>
+      <div class="stage-amount" id="s3">— <span>g</span></div>
+    </div>
+    <div class="stage-row">
+      <div class="stage-dot"></div>
+      <div class="stage-name">
+        Pour 4
+        <small>2:15 → 3:00</small>
+      </div>
+      <div class="stage-amount" id="s4">— <span>g</span></div>
+    </div>
+    <div class="stage-row" style="background: var(--surface-2);">
+      <div class="stage-dot" style="background: var(--gold);"></div>
+      <div class="stage-name" style="color: var(--cream);">Total</div>
+      <div class="stage-amount" id="sTotal" style="color: var(--gold);">— <span>g</span></div>
+    </div>
+  </div>
+
+  <!-- Install hint -->
+  <div class="install-hint">
+    Add to Home Screen: tap the
+    <span class="share-icon" aria-hidden="true"></span>
+    Share button, then <strong>"Add to Home Screen"</strong>
+  </div>
+
+</div>
+
+<script>
+  let ratio = 16;
+  let usingCustom = false;
+
+  function setRatio(btn) {
+    document.querySelectorAll('.ratio-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const val = btn.dataset.ratio;
+    if (val === 'custom') {
+      usingCustom = true;
+      document.getElementById('customRatioBlock').style.display = '';
+      const cv = parseFloat(document.getElementById('customRatioInput').value);
+      if (cv && cv >= 10) {
+        ratio = cv;
+        document.getElementById('customLabel').textContent = '1:' + cv;
+      }
+    } else {
+      usingCustom = false;
+      document.getElementById('customRatioBlock').style.display = 'none';
+      ratio = parseInt(val);
+    }
+    calc();
+  }
+
+  function onCustomRatioChange() {
+    const v = parseFloat(document.getElementById('customRatioInput').value);
+    if (v && v >= 1) {
+      ratio = v;
+      document.getElementById('customLabel').textContent = '1:' + v;
+      calc();
+    }
+  }
+
+  function step(delta) {
+    const inp = document.getElementById('coffeeInput');
+    const cur = parseFloat(inp.value) || 0;
+    const next = Math.max(1, Math.round(cur + delta));
+    inp.value = next;
+    calc();
+  }
+
+  function calc() {
+    const coffee = parseFloat(document.getElementById('coffeeInput').value);
+    const resultEl = document.getElementById('resultNumber');
+    const ratioLine = document.getElementById('ratioLine');
+    const stagesBlock = document.getElementById('stagesBlock');
+    const card = document.getElementById('resultCard');
+
+    if (!coffee || coffee <= 0 || isNaN(coffee)) {
+      resultEl.textContent = '—';
+      ratioLine.textContent = '';
+      stagesBlock.style.display = 'none';
+      card.classList.add('no-input');
+      return;
+    }
+
+    card.classList.remove('no-input');
+
+    const water = Math.round(coffee * ratio);
+
+    // Pulse animation
+    resultEl.classList.add('pulse');
+    setTimeout(() => resultEl.classList.remove('pulse'), 120);
+
+    resultEl.textContent = water;
+    ratioLine.innerHTML = `<strong>${coffee}g</strong> coffee at <strong>1:${ratio}</strong>`;
+
+    // Pour stages — bloom is 2× coffee weight, rest split evenly
+    const bloom = Math.round(coffee * 2);
+    const remaining = water - bloom;
+    const pour = Math.round(remaining / 3);
+    const lastPour = water - bloom - pour - pour; // absorb rounding
+
+    stagesBlock.style.display = '';
+    setStage('s1', bloom);
+    setStage('s2', pour);
+    setStage('s3', pour);
+    setStage('s4', lastPour);
+    setStage('sTotal', water);
+  }
+
+  function setStage(id, val) {
+    const el = document.getElementById(id);
+    el.innerHTML = val + ' <span>g</span>';
+  }
+
+  // Restore last session
+  window.addEventListener('DOMContentLoaded', () => {
+    const saved = localStorage.getItem('po_coffee');
+    if (saved) {
+      document.getElementById('coffeeInput').value = saved;
+      calc();
+    }
+  });
+
+  document.getElementById('coffeeInput').addEventListener('change', () => {
+    const v = document.getElementById('coffeeInput').value;
+    if (v) localStorage.setItem('po_coffee', v);
+  });
+</script>
+
+</body>
+</html>
